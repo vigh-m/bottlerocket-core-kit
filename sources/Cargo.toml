@@ -223,7 +223,7 @@ typed-path = "0.9"
 unindent = "0.2"
 url = "2"
 walkdir = "2.5"
-which = "4"
+which = "8"
 zbus = { version = "5.11", default-features = false }
 zeroize = { version = "1", default-features = false }
 zvariant = "5.7"
