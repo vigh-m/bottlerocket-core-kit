@@ -498,7 +498,7 @@ pub(crate) fn get_metadata_for_data_keys<D: DataStore, S: AsRef<str>>(
 // key is always before its successors.
 fn sort_metadata(metadata: HashMap<Key, HashMap<Key, String>>) -> Vec<(Key, HashMap<Key, String>)> {
     let mut metadata_sorted: Vec<_> = metadata.into_iter().collect();
-    metadata_sorted.sort_by(|(k1, _), (k2, _)| k1.segments().len().cmp(&k2.segments().len()));
+    metadata_sorted.sort_by_key(|(k1, _)| k1.segments().len());
     metadata_sorted.to_vec()
 }
 

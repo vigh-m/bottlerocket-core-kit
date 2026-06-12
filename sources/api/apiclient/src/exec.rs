@@ -23,7 +23,9 @@ use signal_hook::{consts::signal, iterator::Signals};
 use snafu::{OptionExt, ResultExt};
 use std::ffi::OsString;
 use std::io::Read;
-use std::os::unix::io::RawFd;
+use std::os::fd::AsRawFd;
+use std::os::unix::io::AsFd;
+use std::os::unix::io::BorrowedFd;
 use std::path::Path;
 use std::pin::Pin;
 use std::process;
@@ -647,7 +649,8 @@ impl HandleSignals {
     /// Try to send a window size update to the server.  We don't consider window size updates to
     /// be critical, since the program is still functioning, so we don't return errors.
     fn send_winch(tx: &mpsc::UnboundedSender<Message>) {
-        if let Some(winsize) = get_winsize(STDOUT_FILENO) {
+        let stdout_fd = unsafe { BorrowedFd::borrow_raw(STDOUT_FILENO) };
+        if let Some(winsize) = get_winsize(stdout_fd) {
             debug!(
                 "Sending new window size to server: {} cols {} rows",
                 winsize.cols, winsize.rows
@@ -661,7 +664,7 @@ impl HandleSignals {
 
 /// Get the current window size of the user's terminal, if possible.  We don't consider window size
 /// to be critical, since the program is still functioning, so we return Option rather than Result.
-fn get_winsize(fd: RawFd) -> Option<Size> {
+fn get_winsize(fd: impl AsFd) -> Option<Size> {
     let mut winsize = WinSize {
         ws_row: 0,
         ws_col: 0,
@@ -670,7 +673,7 @@ fn get_winsize(fd: RawFd) -> Option<Size> {
     };
     // unsafe because ioctls can do any number of crazy things and this is a libc call, but it's
     // about as safe an ioctl as there is.
-    let ret = unsafe { ioctl(fd, GetWinSize, &mut winsize) };
+    let ret = unsafe { ioctl(fd.as_fd().as_raw_fd(), GetWinSize, &mut winsize) };
     if ret != 0 {
         debug!("Failed to get window size");
         return None;
